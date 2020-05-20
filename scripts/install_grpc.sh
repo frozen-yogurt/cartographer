@@ -17,7 +17,7 @@
 set -o errexit
 set -o verbose
 
-VERSION="v1.10.0"
+VERSION="v1.14.2"
 # Digest: 474c5950686e3962bd339c93d27e369bf64f568f
 
 # Build and install gRPC.
