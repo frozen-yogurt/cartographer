@@ -134,6 +134,16 @@ int MapBuilder::AddTrajectoryBuilder(
     if (trajectory_options.has_overlapping_submaps_trimmer_2d()) {
       const auto& trimmer_options =
           trajectory_options.overlapping_submaps_trimmer_2d();
+      double reso = trajectory_options.trajectory_builder_2d_options()
+              .submaps_options()
+              .grid_options_2d()
+              .resolution();
+      LOG(INFO) << "xx resolution: " << reso << " pow2: " << common::Pow2(reso)
+          << " min_covered_cells_count: " << trimmer_options.min_covered_area() /
+              common::Pow2(trajectory_options.trajectory_builder_2d_options()
+                               .submaps_options()
+                               .grid_options_2d()
+                               .resolution());
       pose_graph_->AddTrimmer(common::make_unique<OverlappingSubmapsTrimmer2D>(
           trimmer_options.fresh_submaps_count(),
           trimmer_options.min_covered_area() /

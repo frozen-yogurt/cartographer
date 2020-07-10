@@ -122,14 +122,20 @@ std::map<SubmapId, common::Time> ComputeSubmapFreshness(
     submap_to_node->second =
         std::max(submap_to_node->second, constraint.node_id);
   }
+  // std::stringstream ss;
+  // ss << "  xx all submaps: ";
+  // for (const auto& map : submap_to_latest_node) {
+  //   ss << map.first << "  ";
+  // }
+  // LOG(INFO) << ss.str();
 
   // Find timestamp of every latest node.
   for (const auto& submap_id_to_node_id : submap_to_latest_node) {
     auto submap_data_item = submap_data.find(submap_id_to_node_id.first);
     if (submap_data_item == submap_data.end()) {
-      LOG(WARNING) << "Intra-submap constraint between SubmapID = "
-                   << submap_id_to_node_id.first << " and NodeID "
-                   << submap_id_to_node_id.second << " is missing submap data";
+      // LOG(WARNING) << "Intra-submap constraint between SubmapID = "
+      //              << submap_id_to_node_id.first << " and NodeID "
+      //              << submap_id_to_node_id.second << " is missing submap data";
       continue;
     }
     auto latest_node_id = trajectory_nodes.find(submap_id_to_node_id.second);
@@ -143,15 +149,16 @@ std::map<SubmapId, common::Time> ComputeSubmapFreshness(
 // not overlapped by at least 'fresh_submaps_count' submaps.
 std::vector<SubmapId> FindSubmapIdsToTrim(
     const SubmapCoverageGrid2D& coverage_grid,
-    const std::set<SubmapId>& all_submap_ids, uint16 fresh_submaps_count,
+    const std::set<SubmapId>& all_submap_ids, 
+    uint16 fresh_submaps_count,
     uint16 min_covered_cells_count) {
   std::map<SubmapId, uint16> submap_to_covered_cells_count;
+  // LOG(INFO) << "  xx cell size " << coverage_grid.cells().size();
   for (const auto& cell : coverage_grid.cells()) {
-    std::vector<std::pair<SubmapId, common::Time>> submaps_per_cell(
-        cell.second);
+    std::vector<std::pair<SubmapId, common::Time>> submaps_per_cell(cell.second);
 
-    // In case there are several submaps covering the cell, only the freshest
-    // submaps are kept.
+    // In case there are several submaps covering the same cell, only the freshest
+    // fresh_submaps_count submaps are kept.
     if (submaps_per_cell.size() > fresh_submaps_count) {
       // Sort by time in descending order.
       std::sort(submaps_per_cell.begin(), submaps_per_cell.end(),
@@ -184,6 +191,8 @@ std::vector<SubmapId> FindSubmapIdsToTrim(
 
 void OverlappingSubmapsTrimmer2D::Trim(Trimmable* pose_graph) {
   const auto submap_data = pose_graph->GetOptimizedSubmapData();
+  LOG(INFO) << "xx 1. (submap_data-current_submap ? min_added_submaps_count)  " \
+    << submap_data.size() << " " << current_submap_count_ << " " << min_added_submaps_count_;
   if (submap_data.size() - current_submap_count_ <= min_added_submaps_count_) {
     return;
   }
@@ -193,14 +202,37 @@ void OverlappingSubmapsTrimmer2D::Trim(Trimmable* pose_graph) {
           ->grid()
           ->limits();
   SubmapCoverageGrid2D coverage_grid(first_submap_map_limits);
+
+  // every submap with node time which is the latest one in that submap
   const std::map<SubmapId, common::Time> submap_freshness =
       ComputeSubmapFreshness(submap_data, pose_graph->GetTrajectoryNodes(),
                              pose_graph->GetConstraints());
+  LOG(INFO) << "xx 2. fresh submap: " << submap_freshness.size();
+  
   const std::set<SubmapId> all_submap_ids = AddSubmapsToSubmapCoverageGrid2D(
       submap_freshness, submap_data, &coverage_grid);
+  // std::stringstream ss;
+  // ss << "xx all submaps: ";
+  // for (const auto& smap : all_submap_ids) {
+  //   ss << smap << "  ";
+  // }
+  // LOG(INFO) << ss.str();
+  LOG(INFO) << "xx 3. fresh submap finished: " << all_submap_ids.size();
   const std::vector<SubmapId> submap_ids_to_remove =
       FindSubmapIdsToTrim(coverage_grid, all_submap_ids, fresh_submaps_count_,
                           min_covered_cells_count_);
+  if (submap_ids_to_remove.size() == 0) {
+    LOG(INFO) << "xx 4. 00 submap trim";
+  }
+  else {
+    std::stringstream s;
+    s << "xx 4. " << submap_ids_to_remove.size() << " submap trim: ";
+    for (const SubmapId& id : submap_ids_to_remove) {
+      s << id << " ";
+    }
+    LOG(INFO) << s.str();
+  }
+  
   current_submap_count_ = submap_data.size() - submap_ids_to_remove.size();
   for (const SubmapId& id : submap_ids_to_remove) {
     pose_graph->MarkSubmapAsTrimmed(id);
