@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <chrono>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -327,13 +328,21 @@ void PoseGraph2D::UpdateTrajectoryConnectivity(const Constraint& constraint) {
                                          time);
 }
 
+void PoseGraph2D::GetDuration(std::chrono::time_point<std::chrono::high_resolution_clock> t1, const std::string& info) {
+  auto t2 = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
+  LOG(INFO) << "xx delta time: ["<< duration << "ms] " << info;
+}
+
 void PoseGraph2D::HandleWorkQueue(
     const constraints::ConstraintBuilder2D::Result& result) {
   {
     common::MutexLocker locker(&mutex_);
     constraints_.insert(constraints_.end(), result.begin(), result.end());
   }
+  auto t1 = std::chrono::high_resolution_clock::now();
   RunOptimization();
+  GetDuration(t1, "RunOptimization()");
 
   if (global_slam_optimization_callback_) {
     std::map<int, NodeId> trajectory_id_to_last_optimized_node_id;
@@ -358,6 +367,8 @@ void PoseGraph2D::HandleWorkQueue(
   for (const Constraint& constraint : result) {
     UpdateTrajectoryConnectivity(constraint);
   }
+
+  t1 = std::chrono::high_resolution_clock::now();
   TrimmingHandle trimming_handle(this);
   for (auto& trimmer : trimmers_) {
     trimmer->Trim(&trimming_handle);
@@ -368,7 +379,9 @@ void PoseGraph2D::HandleWorkQueue(
                        return trimmer->IsFinished();
                      }),
       trimmers_.end());
+  GetDuration(t1, "trimming");
 
+  t1 = std::chrono::high_resolution_clock::now();
   num_nodes_since_last_loop_closure_ = 0;
   run_loop_closure_ = false;
   while (!run_loop_closure_) {
@@ -379,10 +392,12 @@ void PoseGraph2D::HandleWorkQueue(
     work_queue_->front()();
     work_queue_->pop_front();
   }
-  LOG(INFO) << "Remaining work items in queue: " << work_queue_->size();
+  LOG(INFO) << "xx " << lastRoundQueueSize_ << ", " << work_queue_->size() << " Last queue size, Remaining work items in queue";
+  lastRoundQueueSize_ =  work_queue_->size();
   // We have to optimize again.
   constraint_builder_.WhenDone(
       std::bind(&PoseGraph2D::HandleWorkQueue, this, std::placeholders::_1));
+  GetDuration(t1, "WhenDone");
 }
 
 void PoseGraph2D::WaitForAllComputations() {

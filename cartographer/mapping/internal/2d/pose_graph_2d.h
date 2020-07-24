@@ -161,6 +161,8 @@ class PoseGraph2D : public PoseGraph {
     SubmapState state = SubmapState::kActive;
   };
 
+  size_t lastRoundQueueSize_;
+
   MapById<SubmapId, PoseGraphInterface::SubmapData> GetSubmapDataUnderLock()
       const REQUIRES(mutex_);
 
@@ -190,6 +192,8 @@ class PoseGraph2D : public PoseGraph {
   // Adds constraints for older nodes whenever a new submap is finished.
   void ComputeConstraintsForOldNodes(const SubmapId& submap_id)
       REQUIRES(mutex_);
+
+  void GetDuration(std::chrono::time_point<std::chrono::high_resolution_clock> t1, const std::string& info);
 
   // Runs the optimization, executes the trimmers and processes the work queue.
   void HandleWorkQueue(const constraints::ConstraintBuilder2D::Result& result)
