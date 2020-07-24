@@ -302,9 +302,9 @@ void OptimizationProblem2D::Solve(
   ceres::Solve(
       common::CreateCeresSolverOptions(options_.ceres_solver_options()),
       &problem, &summary);
-  if (options_.log_solver_summary()) {
-    LOG(INFO) << summary.FullReport();
-  }
+  // if (options_.log_solver_summary()) {
+  //   LOG(INFO) << summary.FullReport();
+  // }
 
   // Store the result.
   for (const auto& C_submap_id_data : C_submaps) {

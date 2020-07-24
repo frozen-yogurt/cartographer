@@ -248,23 +248,23 @@ void ConstraintBuilder2D::ComputeConstraint(
                                     options_.loop_closure_rotation_weight()},
                                    Constraint::INTER_SUBMAP});
 
-  if (options_.log_matches()) {
-    std::ostringstream info;
-    info << "Node " << node_id << " with "
-         << constant_data->filtered_gravity_aligned_point_cloud.size()
-         << " points on submap " << submap_id << std::fixed;
-    if (match_full_submap) {
-      info << " matches";
-    } else {
-      const transform::Rigid2d difference =
-          initial_pose.inverse() * pose_estimate;
-      info << " differs by translation " << std::setprecision(2)
-           << difference.translation().norm() << " rotation "
-           << std::setprecision(3) << std::abs(difference.normalized_angle());
-    }
-    info << " with score " << std::setprecision(1) << 100. * score << "%.";
-    LOG(INFO) << info.str();
-  }
+  // if (options_.log_matches()) {
+  //   std::ostringstream info;
+  //   info << "Node " << node_id << " with "
+  //        << constant_data->filtered_gravity_aligned_point_cloud.size()
+  //        << " points on submap " << submap_id << std::fixed;
+  //   if (match_full_submap) {
+  //     info << " matches";
+  //   } else {
+  //     const transform::Rigid2d difference =
+  //         initial_pose.inverse() * pose_estimate;
+  //     info << " differs by translation " << std::setprecision(2)
+  //          << difference.translation().norm() << " rotation "
+  //          << std::setprecision(3) << std::abs(difference.normalized_angle());
+  //   }
+  //   info << " with score " << std::setprecision(1) << 100. * score << "%.";
+  //   LOG(INFO) << info.str();
+  // }
 }
 
 void ConstraintBuilder2D::RunWhenDoneCallback() {
@@ -277,11 +277,11 @@ void ConstraintBuilder2D::RunWhenDoneCallback() {
       if (constraint == nullptr) continue;
       result.push_back(*constraint);
     }
-    if (options_.log_matches()) {
-      LOG(INFO) << constraints_.size() << " computations resulted in "
-                << result.size() << " additional constraints.";
-      LOG(INFO) << "Score histogram:\n" << score_histogram_.ToString(10);
-    }
+    // if (options_.log_matches()) {
+    //   LOG(INFO) << constraints_.size() << " computations resulted in "
+    //             << result.size() << " additional constraints.";
+    //   LOG(INFO) << "Score histogram:\n" << score_histogram_.ToString(10);
+    // }
     constraints_.clear();
     callback = std::move(when_done_);
     when_done_.reset();
