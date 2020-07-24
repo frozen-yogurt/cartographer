@@ -387,6 +387,7 @@ void PoseGraph2D::HandleWorkQueue(
   while (!run_loop_closure_) {
     if (work_queue_->empty()) {
       work_queue_.reset();
+      LOG(INFO) << "xx !! work queue is empty !!";
       return;
     }
     work_queue_->front()();
